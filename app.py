@@ -4,20 +4,6 @@ import numpy as np
 from flask import Flask, request, render_template,make_response
 from verifier import Verifier
 import asyncio
-async def email_verify(email):
-            v = Verifier(source_addr='user@example.com')
-            l = v.verify(email)
-            valid = l.get('valid_format')
-            deliverable= l.get('deliverable')
-            full_inbox= l.get('full_inbox')
-            host_exists= l.get('host_exists')
-            catch_all=l.get('catch_all')
-            message= l.get('message')
-
-            return valid,deliverable,full_inbox,host_exists,catch_all,message
-async def main(df):
-            df[['valid','deliverable','full_inbox','host_exists','catch_all','message']]=await asyncio.gather(*[email_verify(v) for v in df['Email']])
-            return df
 
 app = Flask(__name__)
         
@@ -32,6 +18,21 @@ def file_upload():
         df = read_csv(request.files.get('file'),encoding='ISO-8859-1',)
         df = DataFrame(df)
         df = df.drop_duplicates()
+        async def email_verify(email):
+            v = Verifier(source_addr='user@example.com')
+            l = v.verify(email)
+            valid = l.get('valid_format')
+            deliverable= l.get('deliverable')
+            full_inbox= l.get('full_inbox')
+            host_exists= l.get('host_exists')
+            catch_all=l.get('catch_all')
+            message= l.get('message')
+
+            return valid,deliverable,full_inbox,host_exists,catch_all,message
+
+        async def main(df):
+            df[['valid','deliverable','full_inbox','host_exists','catch_all','message']]=await asyncio.gather(*[email_verify(v) for v in df['Email']])
+            return df
         asyncio.run(main(df))
                 
         resp = make_response(df.to_csv())
